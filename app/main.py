@@ -70,7 +70,22 @@ async def download_mp3(message: Message):
 
 @bot.message_handler(state=MyStates.mp4)
 async def download_mp4(message: Message):
-    print("mp4: ", message.text)
+    try:
+        print("execute mp4 ...")
+        url = message.text
+        if is_url_invalid(url=url): return
+        yt = YouTube(url=url)
+        video = yt.streams.get_highest_resolution()
+        filename = remove_special_char(video.default_filename)
+        video.download(output_path=Config.PATH, filename=filename)
+        my_path = "{}/{}".format(Config.PATH, filename)
+        await bot.send_document(message.chat.id, document=open(my_path, 'rb'), timeout=300)
+        delete = "rm " + my_path
+        os.system(delete)
+    except VideoUnavailable:
+        await bot.reply_to(message, "Error: La url del video no esta disponible ...")
+    except RegexMatchError:
+        await bot.reply_to(message, "Error: La url ingresada no es válida ...")
 
 # TODO: test message
 @bot.message_handler(func=lambda message: True)
