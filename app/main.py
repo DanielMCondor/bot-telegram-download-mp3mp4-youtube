@@ -1,3 +1,6 @@
+import re, os
+from pytube import YouTube
+from pytube.exceptions import VideoUnavailable, RegexMatchError
 from telebot import asyncio_filters
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import ReplyKeyboardMarkup, ForceReply, Message
@@ -7,7 +10,8 @@ from telebot.asyncio_storage import StateMemoryStorage
 from shared.config import Config
 from shared.functions import *
 
-bot = AsyncTeleBot(Config.TOKEN, state_storage=StateMemoryStorage())
+# , state_storage=StateMemoryStorage()
+bot = AsyncTeleBot(Config.TOKEN)
 
 class MyStates(StatesGroup):
     mp3 = State()
@@ -43,14 +47,26 @@ async def get_uri(message: Message):
 # FIXME: pruebas
 @bot.message_handler(state=MyStates.mp3)
 async def download_mp3(message: Message):
-    print("mp3: ", message.text)
-    """
-    State 2. Will process when user's state is MyStates.surname.
-    """
-    await bot.send_message(message.chat.id, "What is your age?")
-    # await bot.set_state(message.from_user.id, MyStates.age, message.chat.id)
-    # async with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-    #     data['surname'] = message.text
+    try:
+        print("execute mp3 ...")
+        url = message.text
+        if is_url_invalid(url=url): return
+        yt = YouTube(url=url)
+        video = yt.streams.filter(only_audio=True).first()
+        filename = remove_special_char(video.default_filename)
+        out_file = video.download(output_path=Config.PATH, filename=filename)
+        base, _ = os.path.splitext(out_file)
+        new_file = f"{base}.mp3"
+        os.rename(out_file, new_file)
+        my_path = "{}/{}".format(Config.PATH, filename.replace("mp4", "mp3"))
+        print("my_path: ", my_path)
+        await bot.send_document(message.chat.id, document=open(my_path, 'rb'), timeout=300)
+        delete = "rm "+my_path
+        os.system(delete)
+    except VideoUnavailable:
+        await bot.reply_to(message, "Error: La url del video no esta disponible ...")
+    except RegexMatchError:
+        await bot.reply_to(message, "Error: La url ingresada no es válida ...")
 
 @bot.message_handler(state=MyStates.mp4)
 async def download_mp4(message: Message):
@@ -61,6 +77,16 @@ async def download_mp4(message: Message):
 async def echo_message(message):
     await bot.reply_to(message, message.text)
 
+# TODO: Validations
+def is_url_invalid(url: str) -> bool:
+    regex = re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]0,61[A-Z0-9])?.)+[A-Z]2,6.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'd1,3.d1,3.d1,3.d1,3)' # ...or ip
+        r'(?::d+)?'  # optional port
+        r'(?:/?|[/?]S+)$', re.IGNORECASE)
+    return url is not None and regex.search(url)
 
 # TODO: register filters
 bot.add_custom_filter(asyncio_filters.StateFilter(bot))
@@ -71,6 +97,6 @@ import asyncio
 if __name__ == "__main__":
     try:
         print("running bot ...")
-        asyncio.run(bot.polling())
+        asyncio.run(bot.polling(non_stop=True))
     except KeyboardInterrupt:
         print("Error: Interrunpiste el bot")
