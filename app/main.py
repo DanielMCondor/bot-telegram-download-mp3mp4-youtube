@@ -1,4 +1,4 @@
-import re, os, sys, time
+import re, os, sys, errno
 from pytube import YouTube
 from pytube.exceptions import VideoUnavailable, RegexMatchError
 from telebot import asyncio_filters
@@ -9,6 +9,13 @@ from telebot.asyncio_storage import StateMemoryStorage
 
 from shared.config import Config
 from shared.functions import *
+
+# TODO: 09/30/22 create directory if not exits
+try:
+    os.mkdir("./{}".format(Config.PATH))
+except OSError as e:
+    if e.errno != errno.EEXIST:
+        raise
 
 bot = AsyncTeleBot(Config.TOKEN, state_storage=StateMemoryStorage())
 

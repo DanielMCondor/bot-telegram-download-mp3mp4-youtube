@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  app:
+    image: youtube-daniel:v1
+    build: .
+    container_name: youtube
+    restart: always
+    volumes:
+      - .:/app
+    environment:
+      TOKEN: 5528699172:AAGrVCgBLKSGCexuMpK_FULbPegLK0PaHZY
+      DIR_DOWNLOAD: download
+    
