@@ -76,11 +76,12 @@ async def download_mp3(message: Message):
         new_file = f"{base}.mp3"
         os.rename(out_file, new_file)
         my_path = "{}/{}".format(Config.PATH, filename.replace("mp4", "mp3"))
-        print("my_path: ", my_path)
+        
         await bot.send_chat_action(message.chat.id, "upload_audio")
-        await bot.send_audio(message.chat.id, audio=open(my_path, 'rb'), timeout=300, caption=filename.replace("mp4", "mp3"))
+        await bot.send_audio(message.chat.id, audio=open(my_path, 'rb'), timeout=300, caption=yt.title )
         await bot.delete_message(message.chat.id, delete.id)
         await bot.send_message(message.chat.id, "la operación fue éxitosa ....", reply_markup=markup)
+
         delete = "rm "+my_path
         os.system(delete)
     except VideoUnavailable:
@@ -105,7 +106,7 @@ async def download_mp4(message: Message):
         video.download(output_path=Config.PATH, filename=filename)
         my_path = "{}/{}".format(Config.PATH, filename)
         await bot.send_chat_action(message.chat.id, "upload_video")
-        await bot.send_video(message.chat.id, video=open(my_path, 'rb'), timeout=300, caption=filename)
+        await bot.send_video(message.chat.id, video=open(my_path, 'rb'), timeout=300, caption=yt.title)
         await bot.delete_message(message.chat.id, delete.id)
         await bot.send_message(message.chat.id, "la operación fue éxitosa ....", reply_markup=markup)
         delete = "rm " + my_path
